@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "research": {
+      "command": "/home/desktop/workspace/ai/browser/.venv/bin/python",
+      "args": [
+        "-m",
+        "webresearch"
+      ],
+      "env": {
+        "WEBRESEARCH_DOCS_DIR": "/home/desktop/workspace/ai/browser/documents",
+        "WEBRESEARCH_MAX_INLINE_CHARS": "20000",
+        "PYTHONUNBUFFERED": "1",
+        "WEBRESEARCH_ENV_NOTE": "search API keys are loaded from the gitignored .env (see .env.example)"
+      }
+    },
+    "playwright": {
+      "command": "/home/desktop/.local/bin/npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}

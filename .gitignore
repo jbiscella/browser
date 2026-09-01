@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+documents/*
+!documents/.gitkeep
+
+# secrets — never commit
+.env
+
+# session scratch — interactive-browsing snapshots, screenshots, and personal
+# files parked at the repo root; private, never commit
+.playwright-mcp/
+/*.png
+/*.jpeg
+/*.jpg
+/*.yml
+/*.yaml
+/*.docx

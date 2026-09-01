@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webresearch"
+version = "0.1.0"
+description = "Browser-driven web research MCP server: search, fetch, download, convert to Markdown"
+readme = "README.md"
+license = "0BSD"
+license-files = ["LICENSE"]
+authors = [{ name = "Jacopo Biscella" }]
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.9",
+    "playwright>=1.49",
+    "markitdown[pdf,docx,pptx,xlsx]>=0.1.2,<0.2",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+
+[project.scripts]
+webresearch-mcp = "webresearch.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
