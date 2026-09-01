@@ -47,8 +47,8 @@ make handshake  # spawn the server over stdio, list its tools
 Requires Python 3.11+. The system pip is EXTERNALLY-MANAGED, so a venv is mandatory —
 `make setup` handles it.
 
-The Playwright MCP server needs Node ≥ 20. It lives in `~/.local/node-v22.13.0-linux-x64`,
-symlinked into `~/.local/bin` — nothing was installed system-wide; delete those to remove it.
+The Playwright MCP server needs Node ≥ 20 with `npx` on `PATH` — any install works (system
+package, nvm, or a tarball unpacked under `~/.local` with `~/.local/bin` on `PATH`).
 
 Claude Code reads `.mcp.json` at startup: **restart the session**, approve the two
 project-scoped servers, then `/mcp` shows them connected.
