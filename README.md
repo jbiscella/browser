@@ -47,11 +47,26 @@ make handshake  # spawn the server over stdio, list its tools
 Requires Python 3.11+. The system pip is EXTERNALLY-MANAGED, so a venv is mandatory —
 `make setup` handles it.
 
+If Chromium installs but won't *launch* (the usual first-clone failure on a bare distro),
+its system libraries are missing: `sudo .venv/bin/playwright install-deps chromium` on
+Debian/Ubuntu, or see [Playwright's docs](https://playwright.dev/python/docs/browsers#install-system-dependencies)
+for other distros. Developed and tested on Linux; macOS should work; Windows untested.
+
+Optional but recommended — a free Tavily key keeps search on the ToS-clean path
+(see [Search sources](#search-sources--official-apis-first-scraping-as-fallback)):
+
+```bash
+cp .env.example .env    # then paste your tvly-… key into it
+```
+
 The Playwright MCP server needs Node ≥ 20 with `npx` on `PATH` — any install works (system
 package, nvm, or a tarball unpacked under `~/.local` with `~/.local/bin` on `PATH`).
 
 Claude Code reads `.mcp.json` at startup: **restart the session**, approve the two
 project-scoped servers, then `/mcp` shows them connected.
+
+Any other MCP client works too — the server is plain stdio: spawn `.venv/bin/python -m
+webresearch` with the repo root as working directory (that's all `.mcp.json` declares).
 
 ## Usage
 
