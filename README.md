@@ -79,6 +79,74 @@ Which becomes: `web_search` → `download` → `to_markdown` → `search_documen
 `read_document(offset=…)` — with the full 24k-char document on disk and only the relevant
 few hundred characters in context.
 
+## Skill: `/ux-audit` — multi-agent usability audit
+
+A Claude Code skill that audits a live website with a small team of agents and writes a
+shareable report into your home directory. It lives in
+[.claude/skills/ux-audit/](.claude/skills/ux-audit/) and
+[.claude/agents/](.claude/agents/), on top of the two MCP servers above.
+
+### Install
+
+Nothing beyond the [Setup](#setup) section: clone the repo, `make setup`, open Claude Code
+**in the repo root**, restart once so the project-scoped skill and agents are picked up.
+`/ux-audit` then appears in the skill list. Pillow is used to crop screenshots; `make setup`
+already pulls it in, and if you run the scripts with another interpreter, `pip install pillow`.
+
+To use the skill from **another project**, copy `.claude/skills/ux-audit/` and the four
+`.claude/agents/ux-*.md` files into that project (or into `~/.claude/skills/` and
+`~/.claude/agents/` for all projects) and make sure the `research` and `playwright` MCP
+servers are registered there too — the simplest way is to copy this repo's
+[.mcp.json](.mcp.json) and point the `research` command at this repo's `.venv`.
+
+### Use
+
+```
+/ux-audit https://example.com
+/ux-audit https://example.com --lang it --out ~/example-report
+/ux-audit https://example.com --focus listing,checkout
+```
+
+| option | meaning | default |
+|---|---|---|
+| `--lang` | report language (`it`, `fr`, `en`, `de`) | the language you asked in |
+| `--out` | output directory | `~/<host>-usability-report` |
+| `--focus` | areas to dig deeper into: `performance`, `navigation`, `listing`, `purchase`, `accessibility`, `content-trust` | all equal |
+
+What you get, after 15–30 minutes depending on the site:
+
+```
+~/example-com-usability-report/
+├── report.html        one standalone page, screenshots embedded, light/dark, printable
+├── screenshot/        the cropped images as separate files
+└── findings/          one JSON per area — every finding with URL, numbers, fix, effort
+~/example-com-usability-report.zip
+```
+
+What happens underneath: `ux-recon` maps the site without a browser; `ux-capture` — the
+**only** agent allowed on the shared Playwright Chrome — runs the probe scripts on each
+representative page at 1366 px and 390 px, screenshots, and walks the purchase flow up to
+the checkout form (it never pays, never creates accounts, never submits contact forms);
+six `ux-analyst` agents check their area against
+[reference/heuristics.md](.claude/skills/ux-audit/reference/heuristics.md) in parallel;
+a cross-check round relays each area's headlines to the others so duplicates are merged
+and severities settled; `ux-report-writer` assembles the report.
+
+### Customise
+
+Edit the files next to the skill, not the agents:
+
+- `reference/heuristics.md` — what is checked and the thresholds quoted as "reference".
+- `reference/severity-and-findings.md` — severity scale and the findings JSON schema.
+- `reference/report-writing.md` — section order, tone, number formats per language.
+- `probes/*.js` — the `browser_evaluate` functions; add one and list it in `SKILL.md`.
+- `templates/report-template.html` — the report's design system.
+
+Two things to know: the Playwright MCP server is a **single browser**, so only one capture
+runs at a time and the analysts work from files; and if a run dies with *"Browser is
+already in use"*, a Chrome from an earlier session still holds the profile — the capture
+agent kills it and retries, or you can: `pkill -f ms-playwright-mcp/mcp-chrome`.
+
 ## The one design rule: no tool ever returns a whole document
 
 A converted 300-page PDF is ~1M characters. Returning that inline blows the context window
