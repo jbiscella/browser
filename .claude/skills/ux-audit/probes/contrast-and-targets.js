@@ -1,0 +1,27 @@
+// Probe: contrast of text and buttons, tap-target sizes, focus visibility, primary CTA
+// styling. Pass verbatim to browser_evaluate. Contrast uses computed background colours
+// walked up the tree; gradients and images are NOT seen — verify low ratios on a
+// screenshot before reporting them.
+() => {
+  const lum = c => { const m = (c.match(/\d+(\.\d+)?/g) || [0, 0, 0]).map(Number); const [r, g, b] = m.slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const ratio = (a, b) => { const l1 = lum(a), l2 = lum(b); return Math.round(((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)) * 100) / 100; };
+  const transparent = c => !c || /rgba\(\d+, \d+, \d+, 0\)|transparent/.test(c);
+  const bgOf = el => { let e = el; while (e && e !== document.documentElement) { const cs = getComputedStyle(e); if (!transparent(cs.backgroundColor)) return { color: cs.backgroundColor, hasImage: cs.backgroundImage !== 'none' }; if (cs.backgroundImage !== 'none') return { color: null, hasImage: true }; e = e.parentElement; } const b = getComputedStyle(document.body).backgroundColor; return { color: transparent(b) ? 'rgb(255, 255, 255)' : b, hasImage: false }; };
+  const visible = el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.opacity !== '0' && r.bottom > 0 && r.top < innerHeight * 4; };
+  const textEls = [...document.querySelectorAll('p,li,a,span,h1,h2,h3,h4,label,button,td,th,figcaption,small')].filter(e => visible(e) && e.childNodes.length && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 2)).slice(0, 700);
+  const low = [];
+  textEls.forEach(e => { const cs = getComputedStyle(e); const bg = bgOf(e); if (!bg.color) return; const r = ratio(cs.color, bg.color); const fs = parseFloat(cs.fontSize); const large = fs >= 24 || (fs >= 18.66 && parseInt(cs.fontWeight) >= 700); const min = large ? 3 : 4.5; if (r < min) low.push({ text: e.textContent.trim().replace(/\s+/g, ' ').slice(0, 50), tag: e.tagName, color: cs.color, bg: bg.color, bgImageAbove: bg.hasImage, ratio: r, fontPx: fs }); });
+  const uniqLow = []; const seenT = new Set(); low.forEach(l => { const k = l.color + l.bg; if (!seenT.has(k)) { seenT.add(k); uniqLow.push(l); } });
+  const targets = [...document.querySelectorAll('a,button,input:not([type=hidden]),select,textarea,[role=button]')].filter(visible);
+  const size = t => { const r = t.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; };
+  const under24 = targets.filter(t => { const s = size(t); return s.w < 24 || s.h < 24; });
+  const under44 = targets.filter(t => { const s = size(t); return (s.w < 44 || s.h < 44); });
+  const name = t => (t.getAttribute('aria-label') || t.textContent.trim() || t.tagName).replace(/\s+/g, ' ').slice(0, 30);
+  const ctaSel = 'button[type=submit], .btn-primary, .button--primary, [class*=add-to-cart], [class*=addtocart], [name=add], .product-form__submit, [class*=primary]';
+  const ctas = [...document.querySelectorAll(ctaSel)].filter(visible).slice(0, 4).map(b => { const cs = getComputedStyle(b); const bg = bgOf(b.parentElement || document.body); const own = transparent(cs.backgroundColor) ? null : cs.backgroundColor; const border = parseFloat(cs.borderTopWidth) > 0 && !transparent(cs.borderTopColor) ? cs.borderTopColor : null; return { text: name(b), bg: own, border, shadow: cs.boxShadow !== 'none', textColor: cs.color, surroundBg: bg.color, bgVsSurround: own && bg.color ? ratio(own, bg.color) : null, textVsBg: own ? ratio(cs.color, own) : (bg.color ? ratio(cs.color, bg.color) : null), ...size(b), looksLikeButton: !!(own && bg.color && ratio(own, bg.color) >= 1.5) || !!border || cs.boxShadow !== 'none' }; });
+  let focusStyle = null; const f = targets.find(t => t.tagName === 'A' || t.tagName === 'BUTTON'); if (f) { const before = getComputedStyle(f).outlineStyle + '|' + getComputedStyle(f).boxShadow; f.focus(); const cs = getComputedStyle(f); focusStyle = { outline: cs.outlineStyle + ' ' + cs.outlineWidth + ' ' + cs.outlineColor, boxShadow: cs.boxShadow.slice(0, 60), changed: (cs.outlineStyle + '|' + cs.boxShadow) !== before }; f.blur(); }
+  const fixed = [...document.querySelectorAll('*')].filter(e => { const cs = getComputedStyle(e); return (cs.position === 'fixed' || cs.position === 'sticky') && visible(e) && e.getBoundingClientRect().height > 30; }).map(e => { const r = e.getBoundingClientRect(); return { id: (e.id || e.className || e.tagName).toString().slice(0, 50), h: Math.round(r.height), top: Math.round(r.top) }; }).slice(0, 6);
+  const fixedShare = Math.round(fixed.reduce((s, x) => s + x.h, 0) / innerHeight * 100);
+  const reduced = [...document.styleSheets].some(s => { try { return [...s.cssRules].some(r => r.media && /prefers-reduced-motion/.test(r.media.mediaText)); } catch (e) { return false; } });
+  return { url: location.href, viewport: innerWidth, textChecked: textEls.length, lowContrast: uniqLow.slice(0, 12), lowContrastCount: low.length, targets: targets.length, under24: under24.length, under44: under44.length, smallTargetSample: under44.slice(0, 10).map(t => name(t) + ' ' + size(t).w + 'x' + size(t).h), primaryCtas: ctas, focusStyle, fixedElements: fixed, fixedShareOfViewportPct: fixedShare, reducedMotionRule: reduced };
+}

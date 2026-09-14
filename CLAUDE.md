@@ -66,3 +66,15 @@ pasting contents into an external service.
 When retrieving official conditions, **verify the edition inside the converted text against
 what the policy cites**, and say so. A plausible-looking document of the wrong edition is
 worse than none.
+
+## Skills in this repo
+
+`/ux-audit <url> [--lang it] [--out ~/dir]` runs a multi-agent usability audit of a live
+site and writes `~/<host>-usability-report/report.html` plus a zip. It is defined in
+[.claude/skills/ux-audit/SKILL.md](.claude/skills/ux-audit/SKILL.md) and uses the agents
+in [.claude/agents/](.claude/agents/): `ux-recon` (map the site), `ux-capture` (the
+**only** agent that may drive the shared Playwright browser), six `ux-analyst` in
+parallel, and `ux-report-writer`. Heuristics, severity scale, probe scripts and the
+report template live next to the skill; edit those, not the agents, to change what an
+audit checks.
+
